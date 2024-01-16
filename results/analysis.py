@@ -21,18 +21,19 @@ def download_database(target_file = 'equipsy.ABETdb'):
         print("File successfully downloaded ...")
 
 
-def display_experiment(experiment):
-    pass
+def display_experiment(experiment, axes, to_display=None):
+    if axes is None:
+        fig, axes = plt.subplots(1)
+    if to_display is None:
+        to_display = experiment.mapping.values()
+    
 
 
 class Experiment():
 
     mapping = {'BIRBeam #1' : 'BBeam', 
                'FIRBeam #1' : 'FBeam',
-               'Screen_Centre': 'screen center', 
-               'Screen_beam' : 'screen beam',  
-               'Screen_left' : 'screen left', 
-               'Screen_right' : 'screen right' }
+               'Tray #1' : 'Tray'}
     
     def __init__(self, sid, database):
         self.sid = sid
@@ -53,8 +54,9 @@ class Experiment():
     
     def _get_input_data(self, name):
         df = self.data
-        on_data = df[(df['DEventText'] == 'Input Transition On Event') & (df['DEffectText'] == name)]   
-        return on_data['DTime'].values
+        on_data = df[(df['DEventText'] == 'Input Transition On Event') & (df['DEffectText'] == name)] 
+        off_data = df[(df['DEventText'] == 'Input Transition Off Event') & (df['DEffectText'] == name)]
+        return {'onsets' : on_data['DTime'].values, 'offsets' : off_data['DTime'].values}
 
 
 class DataBase():
