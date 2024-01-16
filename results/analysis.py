@@ -1,6 +1,8 @@
 import sys, subprocess, os
 from io import StringIO
 import pandas as pd
+import numpy as np
+
 
 def download_database(target_file = 'equipsy.ABETdb'):
 
@@ -17,23 +19,53 @@ def download_database(target_file = 'equipsy.ABETdb'):
         remoteFilePath = Path('rat') / 'touchscreen'/ 'ABET System Folder'/ 'equipsy.ABETdb'
         localFilePath = Path(f'./{target_file}')
         # Use get method to download a file
+        print(localFilePath)
         sftp.get(str(remoteFilePath), str(localFilePath))
         print("File successfully downloaded ...")
 
-
-def display_experiment(experiment, axes, to_display=None):
-    if axes is None:
-        fig, axes = plt.subplots(1)
-    if to_display is None:
-        to_display = experiment.mapping.values()
     
 
+class GroupExperiments():
 
-class Experiment():
+    def __init__(self, experiments):
+        self.experiments = experiments
 
-    mapping = {'BIRBeam #1' : 'BBeam', 
-               'FIRBeam #1' : 'FBeam',
-               'Tray #1' : 'Tray'}
+    @property
+    def nb_experiments(self):
+        return len(self.experiments)
+    
+    @property
+    def stats(self):
+        res = {}
+        for e in self.experiments:
+            for key, value in e.stats.items():
+                if not key in res:            
+                    res[key] = [value]
+                else:
+                    res[key] += [value]
+
+        for key in res.keys():
+            res[key] = np.array(res[key])
+        return res
+    
+
+class SingleDayExperiments(GroupExperiments):
+
+    def __init__(self, experiments):
+        GroupExperiment.__init__(self, experiments)
+        
+
+class SingleExperiment():
+
+    variables_touchscreen = ['Reward_First',
+             'Screen_Centre',
+             'Screen_First',
+             'Screen_beam',
+             'Screen_left',
+             'Screen_right',
+             'reward_beam',
+             'reward_to_screen',
+             'screen_to_reward']
     
     def __init__(self, sid, database):
         self.sid = sid
@@ -48,16 +80,22 @@ class Experiment():
         self.data = df[df['SID'] == self.sid]
         self.duration = self.data['DTime'].values[-1]
         self.inputs = {}
+        self.variables = {}
         
-        for key, value in self.mapping.items():
-            self.inputs[value] = self._get_input_data(key)
+        for key in self.variables_touchscreen:
+            self.variables[key] = self._get_variable_data(key)
     
-    def _get_input_data(self, name):
+    def _get_variable_data(self, name):
         df = self.data
-        on_data = df[(df['DEventText'] == 'Input Transition On Event') & (df['DEffectText'] == name)] 
-        off_data = df[(df['DEventText'] == 'Input Transition Off Event') & (df['DEffectText'] == name)]
-        return {'onsets' : on_data['DTime'].values, 'offsets' : off_data['DTime'].values}
-
+        on_data = df[(df['DEventText'] == 'Variable Event') & (df['DEffectText'] == name)] 
+        return on_data['DTime'].values
+    
+    @property
+    def stats(self):
+        res = {}
+        for key in self.variables:
+            res[key] = len(self.variables[key])
+        return res
 
 class DataBase():
     
@@ -93,26 +131,28 @@ class DataBase():
         all_sid = self.data['tbl_Schedules']['SID'].values
         experiments = []
         for sid in all_sid:
-            experiments += [Experiment(sid, self.data)]
+            experiments += [SingleExperiment(sid, self.data)]
         return experiments
 
     @property
-    def nb_experiements(self):
+    def nb_experiments(self):
         return len(self.experiments)
     
     @property
     def all_animals(self):
         return set([e.animal for e in self.experiments])
 
-    # def get_sid_per_animal(self, animal='A1'):
-    #     data = self.data['tbl_Schedule_Notes']
-    #     animals = data[data['NName'] == 'Animal ID']
-    #     return animals[animals['NValue'] == animal]['SID'].values
-
-    # def get_experiment(data, SID):
-    #     return data[data['SID'] == SID]
-
-    # def get_input_data(data, name='BIRBeam #1'):
-    #     on_data = self.data[self.data['DEventText'] == 'Input Transition On Event']
-    #     on_data = on_data[on_data['DEffectText'] == name]    
-    #     return on_data['DTime'].values
+    def get_experiments_per_date(self, date):
+        experiments = []
+        for e in self.experiments:
+            if e.date.strftime('%d/%m/%y') == date:
+                experiments += [e]
+        return GroupExperiments(experiments)
+    
+    def get_experiments_per_animal(self, animal):
+        experiments = []
+        for e in self.experiments:
+            if e.animal == animal:
+                experiments += [e]
+        return GroupExperiments(experiments)
+        
