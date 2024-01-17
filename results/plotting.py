@@ -21,13 +21,14 @@ def display_weights(group_experiments, axes=None, output=None):
         res[animal] = []
         for e in data.experiments:
             res[e.animal] += [e.weight]
-    print(res, all_dates)
+
     for animal in res.keys():
         res[animal] = np.array(res[animal])
         axes.plot(res[animal], label=animal)
 
     axes.set_ylabel('Weight (g)')
     axes.set_xticks(np.arange(len(all_dates)), all_dates, rotation=45)
+    axes.legend()
     _simpleaxis(axes)
     if fig is not None:
         fig.tight_layout()
