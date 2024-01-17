@@ -5,29 +5,37 @@ def _simpleaxis(ax):
     for spine in ['right', 'top']:
         ax.spines[spine].set_visible(False)
 
-def view_group_experiment(experiments, nrows=4):
-    ncols = len(experiments) // 4
-    fig, axes = plt.subplots(nrows, ncols, squeeze=False)
-    for count, e in enumerate(experiments):
-        i, j = np.unravel_index(count, (nrows, ncols))
-        ax = axes[i, j]
-        display_experiment(e, ax)
-        ax.set_title(f'{e.animal}')
-        _simpleaxis(ax)
-        if (i < nrows - 1):
-            ax.set_xticks([], [])
-            ax.set_xlabel('')
-        else:
-            ax.set_xlabel('Time (s)')
-        if (j < ncols - 1):
-            ax.set_yticks([], [])
-            ax.set_ylabel('')
-        if j== 0:
-            ax.set_ylabel('Activation')
-    fig.tight_layout()
+
+def display_weights(group_experiments, axes=None, output=None):
+    if axes is None:
+        fig, axes = plt.subplots(1)
+    else:
+        fig = None
+
+    all_animals = group_experiments.all_animals
+    all_dates = list(group_experiments.all_dates)
+    
+    res = {}
+    for animal in group_experiments.all_animals:
+        data = group_experiments.get_experiments_per_animal(animal)
+        res[animal] = []
+        for e in data.experiments:
+            res[e.animal] += [e.weight]
+    print(res, all_dates)
+    for animal in res.keys():
+        res[animal] = np.array(res[animal])
+        axes.plot(res[animal], label=animal)
+
+    axes.set_ylabel('Weight (g)')
+    axes.set_xticks(np.arange(len(all_dates)), all_dates, rotation=45)
+    _simpleaxis(axes)
+    if fig is not None:
+        fig.tight_layout()
+    if output is not None:
+        plt.savefig(output)
 
 
-def display_group_experiments_over_time(group_experiments, nrows=4, to_display=None):
+def display_group_experiments_over_time(group_experiments, nrows=4, to_display=None, output=None):
     ncols = group_experiments.nb_experiments // 4
     fig, axes = plt.subplots(nrows, ncols, squeeze=False)
     for count, e in enumerate(group_experiments.experiments):
@@ -45,8 +53,11 @@ def display_group_experiments_over_time(group_experiments, nrows=4, to_display=N
             #ax.set_yticks([], [])
             ax.set_ylabel('')
     fig.tight_layout()
+    if output is not None:
+        plt.savefig(output)
 
-def display_experiment_over_time(experiment, axes=None, to_display=None):
+
+def display_experiment_over_time(experiment, axes=None, to_display=None, output=None):
     if axes is None:
         fig, axes = plt.subplots(1)
     else:
@@ -65,15 +76,24 @@ def display_experiment_over_time(experiment, axes=None, to_display=None):
     _simpleaxis(axes)
     if fig is not None:
         fig.tight_layout()
+    if output is not None:
+        plt.savefig(output)
 
-def display_group_experiments(group_experiments, nrows=4, to_display=None):
+
+def display_group_experiments(group_experiments, nrows=4, to_display=None, show_stats=True, output=None):
     ncols = group_experiments.nb_experiments // 4
     fig, axes = plt.subplots(nrows, ncols, squeeze=False)
+
+    if show_stats:
+        stats = group_experiments.stats
+    else:
+        stats = None
+    
     for count, e in enumerate(group_experiments.experiments):
         i, j = np.unravel_index(count, (nrows, ncols))
         ax = axes[i, j]
         _simpleaxis(ax)
-        display_experiment(e, ax, to_display)
+        display_experiment(e, ax, to_display, stats=stats)
         ax.set_title(f'{e.animal}')
         if (i < nrows - 1):
             ax.set_xticks([], [])
@@ -82,8 +102,11 @@ def display_group_experiments(group_experiments, nrows=4, to_display=None):
             #ax.set_yticks([], [])
             ax.set_ylabel('')
     fig.tight_layout()
+    if output is not None:
+        plt.savefig(output)
 
-def display_experiment(experiment, axes=None, to_display=None):
+
+def display_experiment(experiment, axes=None, to_display=None, stats=None, output=None):
     if axes is None:
         fig, axes = plt.subplots(1)
     else:
@@ -94,26 +117,46 @@ def display_experiment(experiment, axes=None, to_display=None):
     
     for key in to_display:
         data += [experiment.stats[key]]
-    xaxis = np.arange(len(data))
-    axes.bar(xaxis, data)
+
+    if stats is not None:
+        shown_stats = [stats[i] for i in to_display]
+    
+    xaxis = np.arange(1, len(data)+1)
+    axes.scatter(xaxis, data, c='k', s=20)
     axes.set_xticks(xaxis, to_display, rotation=45)
     axes.set_ylabel('# events')
+    if stats is not None:
+        violin_parts = axes.violinplot(shown_stats, showmedians=True)
+        # Make the violin body blue with a red border:
+        for partname in ('cbars','cmins','cmaxes','cmedians'):
+            vp = violin_parts[partname]
+            vp.set_edgecolor('k')
+            vp.set_linewidth(0.5)
+        for vp in violin_parts['bodies']:
+            vp.set_facecolor('0.5')
+            vp.set_linewidth(0.5)
+            vp.set_alpha(0.5)
     _simpleaxis(axes)
     if fig is not None:
         fig.tight_layout()
+    if output is not None:
+        plt.savefig(output)
 
-def display_stats_group_experiment(group_experiment, axes=None, to_display=None):
+def display_stats_group_experiments(group_experiments, axes=None, to_display=None, output=None):
     if axes is None:
         fig, axes = plt.subplots(1)
     else:
         fig = None
     if to_display is None:
-        to_display = group_experiment.experiments[0].variables_touchscreen
-    axes.violinplot([group_experiment.stats[i] for i in to_display])
+        to_display = group_experiments.experiments[0].variables_touchscreen
+    axes.violinplot([group_experiments.stats[i] for i in to_display])
     xaxis = np.arange(len(to_display)) + 1
     axes.set_xticks(xaxis, to_display, rotation=45)
     axes.set_ylabel('# events')
     _simpleaxis(axes)
     if fig is not None:
         fig.tight_layout()
+    if output is not None:
+        plt.savefig(output)
+
 

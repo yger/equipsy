@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 
 
+
+
 def download_database(target_file = 'equipsy.ABETdb'):
 
     import pysftp, os
@@ -33,6 +35,18 @@ class GroupExperiments():
     @property
     def nb_experiments(self):
         return len(self.experiments)
+
+    @property
+    def all_animals(self):
+        return sorted(set([e.animal for e in self.experiments]))
+
+    @property
+    def all_types(self):
+        return sorted(set([e.type for e in self.experiments]))
+
+    @property
+    def all_dates(self):
+        return sorted(set([e.date.strftime('%d/%m/%y') for e in self.experiments]))
     
     @property
     def stats(self):
@@ -47,13 +61,54 @@ class GroupExperiments():
         for key in res.keys():
             res[key] = np.array(res[key])
         return res
+
+    def get_experiments_per_date(self, date, sorted=True):
+        experiments = []
+        for e in self.experiments:
+            if e.date.strftime('%d/%m/%y') == date:
+                experiments += [e]
+        if sorted:
+            import numpy as np
+            sorted_experiments = []
+            idx = np.argsort([e.animal for e in experiments])
+            for i in idx:
+                sorted_experiments += [experiments[i]]
+            return GroupExperiments(sorted_experiments)
+        else:
+            return GroupExperiments(experiments)
     
+    def get_experiments_per_animal(self, animal, sorted=True):
+        experiments = []
+        for e in self.experiments:
+            if e.animal == animal:
+                experiments += [e]
+        if sorted:
+            import numpy as np
+            sorted_experiments = []
+            idx = np.argsort([e.date for e in experiments])
+            for i in idx:
+                sorted_experiments += [experiments[i]]
+            return GroupExperiments(sorted_experiments)
+        else:
+            return GroupExperiments(experiments)
+        return GroupExperiments(experiments)
 
-class SingleDayExperiments(GroupExperiments):
+    def get_experiments_per_type(self, animal, sorted=True):
+        experiments = []
+        for e in self.experiments:
+            if e.animal == animal:
+                experiments += [e]
+        if sorted:
+            import numpy as np
+            sorted_experiments = []
+            idx = np.argsort([e.date for e in experiments])
+            for i in idx:
+                sorted_experiments += [experiments[i]]
+            return GroupExperiments(sorted_experiments)
+        else:
+            return GroupExperiments(experiments)
+        return GroupExperiments(experiments)
 
-    def __init__(self, experiments):
-        GroupExperiment.__init__(self, experiments)
-        
 
 class SingleExperiment():
 
@@ -74,6 +129,7 @@ class SingleExperiment():
         import datetime
         self.date = datetime.datetime.strptime(self.date, '%m/%d/%y %H:%M:%S')
         self.chamber = df.loc[df['SID'] == 1, 'SEnviro'].values[0]
+        self.type = 'to be defined'
         df = database['tbl_Schedule_Notes']
         self.animal = df.loc[(df['SID'] == self.sid) & (df['NName'] == 'Animal ID'), 'NValue'].values[0]
         df = database['tbl_Data']
@@ -97,10 +153,12 @@ class SingleExperiment():
             res[key] = len(self.variables[key])
         return res
 
+
 class DataBase():
     
     def __init__(self, database_path, verbose=False):
-            
+
+        self.database_path = database_path
         subprocess.call(["mdb-schema", database_path, "mysql"])
         # Get the list of table names with "mdb-tables"
         table_names = subprocess.Popen(["mdb-tables", "-1", database_path],
@@ -123,36 +181,25 @@ class DataBase():
             except Exception:
                 pass
         self.data = out_tables
-        self.database_path = database_path
-        self.experiments = self._extract_all_experiments()
-    
-    def _extract_all_experiments(self):
-        #extract_experiments(data):
-        all_sid = self.data['tbl_Schedules']['SID'].values
-        experiments = []
-        for sid in all_sid:
-            experiments += [SingleExperiment(sid, self.data)]
-        return experiments
-
-    @property
-    def nb_experiments(self):
-        return len(self.experiments)
-    
-    @property
-    def all_animals(self):
-        return set([e.animal for e in self.experiments])
-
-    def get_experiments_per_date(self, date):
-        experiments = []
-        for e in self.experiments:
-            if e.date.strftime('%d/%m/%y') == date:
-                experiments += [e]
-        return GroupExperiments(experiments)
-    
-    def get_experiments_per_animal(self, animal):
-        experiments = []
-        for e in self.experiments:
-            if e.animal == animal:
-                experiments += [e]
-        return GroupExperiments(experiments)
         
+    def get_group_experiments(self):
+        self.database_path = self.database_path
+        all_sid = self.data['tbl_Schedules']['SID'].values
+        
+        self.experiments = []
+        for sid in all_sid:
+            self.experiments += [SingleExperiment(sid, self.data)]
+        self._get_weights_from_google_drive()
+        return GroupExperiments(self.experiments)
+
+    def _get_weights_from_google_drive(self, sheet_id = "1i3MCAurk3bOyVAwBfm3RZ4-Qxb2mTa18bwoezFktiG4",
+                                       sheet_name = "Poids"):
+        import pandas as pd        
+        url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
+        df = pd.read_csv(url)
+        for e in self.experiments:
+            target_date = e.date.strftime('%d/%m')
+            target_animal = e.animal
+            data = df.loc[df['# RAT'] == target_animal, target_date].values[0]
+            data = float(data.replace(',', '.'))
+            e.weight = data
