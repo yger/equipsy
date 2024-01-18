@@ -5,14 +5,14 @@ import numpy as np
 
 
 variables_of_interest = {'Habituation' : ['Reward_First',
-                                             'Screen_Centre',
-                                             'Screen_First',
-                                             'Screen_beam',
-                                             'Screen_left',
-                                             'Screen_right',
-                                             'reward_beam',
-                                             'reward_to_screen',
-                                             'screen_to_reward'],
+                                          'Screen_Centre',
+                                          'Screen_First',
+                                          'Screen_beam',
+                                          'Screen_left',
+                                          'Screen_right',
+                                          'reward_beam',
+                                          'reward_to_screen',
+                                          'screen_to_reward'],
                          'Initial Touch' : ['Correct_Counter']
 }
 
@@ -75,6 +75,7 @@ class GroupExperiments():
 
     def get_experiments_per_date(self, date, sorted=True):
         experiments = []
+        assert date in self.all_dates
         for e in self.experiments:
             if e.date.strftime('%d/%m/%y') == date:
                 experiments += [e]
@@ -90,6 +91,7 @@ class GroupExperiments():
     
     def get_experiments_per_animal(self, animal, sorted=True):
         experiments = []
+        assert animal in self.all_animals
         for e in self.experiments:
             if e.animal == animal:
                 experiments += [e]
@@ -104,10 +106,11 @@ class GroupExperiments():
             return GroupExperiments(experiments)
         return GroupExperiments(experiments)
 
-    def get_experiments_per_type(self, animal, sorted=True):
+    def get_experiments_per_type(self, type, sorted=True):
         experiments = []
+        assert type in self.all_types
         for e in self.experiments:
-            if e.animal == animal:
+            if e.type == type:
                 experiments += [e]
         if sorted:
             import numpy as np
@@ -150,10 +153,6 @@ class SingleExperiment():
         
         for key in self.variables_touchscreen:
             self.variables[key] = self._get_variable_data(key)
-
-    #def _get_variables(self):
-    #    df = self.data
-    #    return set(df.loc[df['DEventText'] == 'Variable Event', 'DEffectText'].values)
     
     def _get_variable_data(self, name):
         df = self.data
