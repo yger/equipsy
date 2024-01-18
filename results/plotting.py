@@ -6,6 +6,73 @@ def _simpleaxis(ax):
         ax.spines[spine].set_visible(False)
 
 
+def display_variables(group_experiments, variables=None, show_stats=True, axes=None, output=None):
+
+    if variables is None:
+        variables = list(group_experiments.experiments[0].variables.keys())
+
+    if len(variables) == 1:
+        display_variable(group_experiments, variables[0], show_stats, output=output)
+    else:
+        ncols = 2
+        nrows = len(variables) // ncols
+        
+        if axes is None:
+            fig, axes = plt.subplots(nrows, ncols, figsize=(15, 10), squeeze=False)
+        else:
+            fig = None
+    
+        count = 0
+        for i in range(nrows):
+            for j in range(ncols):
+                display_variable(group_experiments, variables[count], show_stats, axes=axes[i,j])
+                count += 1
+                axes[i,j].get_legend().remove()
+    
+        if fig is not None:
+            fig.tight_layout()
+        if output is not None:
+            plt.savefig(output)
+
+
+def display_variable(group_experiments, variable, show_stats=True, axes=None, output=None):
+    if axes is None:
+        fig, axes = plt.subplots(1)
+    else:
+        fig = None
+
+    all_animals = group_experiments.all_animals
+    all_dates = list(group_experiments.all_dates)
+    
+    res = {}
+    for animal in group_experiments.all_animals:
+        data = group_experiments.get_experiments_per_animals(animal)
+        res[animal] = []
+        for e in data.experiments:
+            res[e.animal] += [e.stats[variable]]
+
+    all_res = []
+    
+    for animal in res.keys():
+        res[animal] = np.array(res[animal])
+        all_res += [res[animal]]
+        axes.plot(res[animal], label=animal)
+
+    m = np.mean(all_res, 0)
+    s = np.std(all_res, 0)
+    axes.plot(m, lw=2, c='k')
+    axes.fill_between(np.arange(len(m)), m-s, m+s, color='k', alpha=0.1)
+    axes.set_ylabel(f'{variable}')
+    axes.set_xticks(np.arange(len(all_dates)), all_dates, rotation=45)
+    axes.legend()
+    _simpleaxis(axes)
+    if fig is not None:
+        fig.tight_layout()
+    if output is not None:
+        plt.savefig(output)
+
+
+
 def display_weights(group_experiments, show_stats=True, axes=None, output=None):
     if axes is None:
         fig, axes = plt.subplots(1)
