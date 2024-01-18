@@ -73,14 +73,15 @@ class GroupExperiments():
             res[key] = np.array(res[key])
         return res
 
-    def get_experiments_per_date(self, date, sorted=True):
+    def get_experiments_per_dates(self, dates, sorted=True):
         experiments = []
-        assert date in self.all_dates
+        if not np.iterable(dates):
+            animals = [dates]
+        
         for e in self.experiments:
-            if e.date.strftime('%d/%m/%y') == date:
+            if e.date.strftime('%d/%m/%y') in dates:
                 experiments += [e]
         if sorted:
-            import numpy as np
             sorted_experiments = []
             idx = np.argsort([e.animal for e in experiments])
             for i in idx:
@@ -89,14 +90,16 @@ class GroupExperiments():
         else:
             return GroupExperiments(experiments)
     
-    def get_experiments_per_animal(self, animal, sorted=True):
+    def get_experiments_per_animals(self, animals, sorted=True):
         experiments = []
-        assert animal in self.all_animals
+        if not np.iterable(animals):
+            animals = [animals]
+        
         for e in self.experiments:
-            if e.animal == animal:
+            if e.animal in animals:           
                 experiments += [e]
+                
         if sorted:
-            import numpy as np
             sorted_experiments = []
             idx = np.argsort([e.date for e in experiments])
             for i in idx:
@@ -106,14 +109,14 @@ class GroupExperiments():
             return GroupExperiments(experiments)
         return GroupExperiments(experiments)
 
-    def get_experiments_per_type(self, type, sorted=True):
+    def get_experiments_per_types(self, types, sorted=True):
         experiments = []
-        assert type in self.all_types
+        if not np.iterable(types):
+            animals = [types]
         for e in self.experiments:
-            if e.type == type:
+            if e.type in types:
                 experiments += [e]
         if sorted:
-            import numpy as np
             sorted_experiments = []
             idx = np.argsort([e.date for e in experiments])
             for i in idx:
@@ -188,8 +191,8 @@ class DataBase():
                     if verbose: print("Dumping " + table)
                     contents = subprocess.Popen(["mdb-export", database_path, table],
                                                 stdout=subprocess.PIPE).communicate()[0]
+                    sys.stdout.flush()
                     temp_io = StringIO(contents.decode())
-                    print(table, temp_io)
                     out_tables[table] = pd.read_csv(temp_io, low_memory=False)
             except Exception:
                 pass

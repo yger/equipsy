@@ -6,7 +6,7 @@ def _simpleaxis(ax):
         ax.spines[spine].set_visible(False)
 
 
-def display_weights(group_experiments, axes=None, output=None):
+def display_weights(group_experiments, show_stats=True, axes=None, output=None):
     if axes is None:
         fig, axes = plt.subplots(1)
     else:
@@ -17,15 +17,59 @@ def display_weights(group_experiments, axes=None, output=None):
     
     res = {}
     for animal in group_experiments.all_animals:
-        data = group_experiments.get_experiments_per_animal(animal)
+        data = group_experiments.get_experiments_per_animals(animal)
         res[animal] = []
         for e in data.experiments:
             res[e.animal] += [e.weight]
 
+    all_res = []
+    
     for animal in res.keys():
         res[animal] = np.array(res[animal])
+        all_res += [res[animal]]
         axes.plot(res[animal], label=animal)
 
+    m = np.mean(all_res, 0)
+    s = np.std(all_res, 0)
+    axes.plot(m, lw=2, c='k')
+    axes.fill_between(np.arange(len(m)), m-s, m+s, color='k', alpha=0.1)
+    axes.set_ylabel('Weight (g)')
+    axes.set_xticks(np.arange(len(all_dates)), all_dates, rotation=45)
+    axes.legend()
+    _simpleaxis(axes)
+    if fig is not None:
+        fig.tight_layout()
+    if output is not None:
+        plt.savefig(output)
+
+
+def display_stats(group_experiments, show_stats=True, axes=None, output=None):
+    if axes is None:
+        fig, axes = plt.subplots(1)
+    else:
+        fig = None
+
+    all_animals = group_experiments.all_animals
+    all_dates = list(group_experiments.all_dates)
+    
+    res = {}
+    for animal in group_experiments.all_animals:
+        data = group_experiments.get_experiments_per_animals(animal)
+        res[animal] = []
+        for e in data.experiments:
+            res[e.animal] += [e.weight]
+
+    all_res = []
+    
+    for animal in res.keys():
+        res[animal] = np.array(res[animal])
+        all_res += [res[animal]]
+        axes.plot(res[animal], label=animal)
+
+    m = np.mean(all_res, 0)
+    s = np.std(all_res, 0)
+    axes.plot(m, lw=2, c='k')
+    axes.fill_between(np.arange(len(m)), m-s, m+s, color='k', alpha=0.1)
     axes.set_ylabel('Weight (g)')
     axes.set_xticks(np.arange(len(all_dates)), all_dates, rotation=45)
     axes.legend()
