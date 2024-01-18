@@ -15,7 +15,7 @@ display_weights(all_experiments, output=filename)
 
 for date in all_experiments.all_dates:
     mydate = date.replace('/', '_')
-    group_experiments = all_experiments.get_experiments_per_date(date)
+    group_experiments = all_experiments.get_experiments_per_dates(date)
     filename = figures_path / "time_courses"
     filename.mkdir(exist_ok=True)
 

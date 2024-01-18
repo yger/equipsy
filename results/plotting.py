@@ -232,9 +232,15 @@ def display_experiment(experiment, axes=None, to_display=None, stats=None, outpu
 
     if stats is not None:
         shown_stats = [stats[i] for i in to_display]
-    
+
+    z_score = (np.abs(data - np.mean(shown_stats, 1)))/np.std(shown_stats, 1)
     xaxis = np.arange(1, len(data)+1)
-    axes.scatter(xaxis, data, c='k', s=20)
+    data = np.array(data)
+    z_limit = 2
+    idx = np.where(z_score > z_limit)        
+    axes.scatter(xaxis[idx], data[idx], c='r', s=20)
+    idx = np.where(z_score <= z_limit)
+    axes.scatter(xaxis[idx], data[idx], c='k', s=20)
     axes.set_xticks(xaxis, to_display, rotation=45)
     axes.set_ylabel('# events')
     if stats is not None:
