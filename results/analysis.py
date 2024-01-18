@@ -4,6 +4,17 @@ import pandas as pd
 import numpy as np
 
 
+variables_of_interest = {'Habituation' : ['Reward_First',
+                                             'Screen_Centre',
+                                             'Screen_First',
+                                             'Screen_beam',
+                                             'Screen_left',
+                                             'Screen_right',
+                                             'reward_beam',
+                                             'reward_to_screen',
+                                             'screen_to_reward'],
+                         'Initial Touch' : ['Correct_Counter']
+}
 
 
 def download_database(target_file = 'equipsy.ABETdb'):
@@ -111,16 +122,6 @@ class GroupExperiments():
 
 
 class SingleExperiment():
-
-    variables_touchscreen = ['Reward_First',
-             'Screen_Centre',
-             'Screen_First',
-             'Screen_beam',
-             'Screen_left',
-             'Screen_right',
-             'reward_beam',
-             'reward_to_screen',
-             'screen_to_reward']
     
     def __init__(self, sid, database):
         self.sid = sid
@@ -128,8 +129,15 @@ class SingleExperiment():
         self.date = df.loc[df['SID'] == self.sid, 'SRunDate'].values[0]
         import datetime
         self.date = datetime.datetime.strptime(self.date, '%m/%d/%y %H:%M:%S')
-        self.chamber = df.loc[df['SID'] == 1, 'SEnviro'].values[0]
-        self.type = 'to be defined'
+        self.chamber = df.loc[df['SID'] == self.sid, 'SEnviro'].values[0]
+
+        experiment_type = df.loc[df['SID'] == self.sid, 'SName'].values[0]        
+        if experiment_type.find('Habituation') > -1:
+            experiment_type = 'Habituation'
+        elif experiment_type.find('Initial Touch') > -1:
+            experiment_type = 'Initial Touch'
+        
+        self.type = experiment_type
         df = database['tbl_Schedule_Notes']
         self.animal = df.loc[(df['SID'] == self.sid) & (df['NName'] == 'Animal ID'), 'NValue'].values[0]
         df = database['tbl_Data']
@@ -137,9 +145,15 @@ class SingleExperiment():
         self.duration = self.data['DTime'].values[-1]
         self.inputs = {}
         self.variables = {}
+
+        self.variables_touchscreen = variables_of_interest[self.type]
         
         for key in self.variables_touchscreen:
             self.variables[key] = self._get_variable_data(key)
+
+    #def _get_variables(self):
+    #    df = self.data
+    #    return set(df.loc[df['DEventText'] == 'Variable Event', 'DEffectText'].values)
     
     def _get_variable_data(self, name):
         df = self.data
@@ -177,7 +191,7 @@ class DataBase():
                                                 stdout=subprocess.PIPE).communicate()[0]
                     temp_io = StringIO(contents.decode())
                     print(table, temp_io)
-                    out_tables[table] = pd.read_csv(temp_io)
+                    out_tables[table] = pd.read_csv(temp_io, low_memory=False)
             except Exception:
                 pass
         self.data = out_tables
@@ -188,8 +202,14 @@ class DataBase():
         
         self.experiments = []
         for sid in all_sid:
-            self.experiments += [SingleExperiment(sid, self.data)]
-        self._get_weights_from_google_drive()
+            if sid not in [33]:
+                self.experiments += [SingleExperiment(sid, self.data)]
+            if sid == [34]:
+                self.experiments[-1].animal = 'G1'
+        try:
+            self._get_weights_from_google_drive()
+        except Exception:
+            pass
         return GroupExperiments(self.experiments)
 
     def _get_weights_from_google_drive(self, sheet_id = "1i3MCAurk3bOyVAwBfm3RZ4-Qxb2mTa18bwoezFktiG4",
@@ -200,6 +220,8 @@ class DataBase():
         for e in self.experiments:
             target_date = e.date.strftime('%d/%m')
             target_animal = e.animal
+            if target_animal == 'nan':
+                target_animal = 'E1'
             data = df.loc[df['# RAT'] == target_animal, target_date].values[0]
             data = float(data.replace(',', '.'))
             e.weight = data
