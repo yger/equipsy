@@ -13,8 +13,9 @@ variables_of_interest = {'Habituation' : ['Reward_First',
                                           'reward_beam',
                                           'reward_to_screen',
                                           'screen_to_reward'],
-                         'Initial Touch' : ['Correct_Counter']
-}
+                         'Initial Touch' : ['Correct_Counter'],
+                         'Must Touch' : ['Correct_Counter']
+                        }
 
 
 def download_database(target_file = 'equipsy.ABETdb'):
@@ -142,6 +143,8 @@ class SingleExperiment():
             experiment_type = 'Habituation'
         elif experiment_type.find('Initial Touch') > -1:
             experiment_type = 'Initial Touch'
+        elif experiment_type.find('Must Touch') > -1:
+            experiment_type = 'Must Touch'
         
         self.type = experiment_type
         df = database['tbl_Schedule_Notes']

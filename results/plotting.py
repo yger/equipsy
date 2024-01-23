@@ -1,5 +1,6 @@
 import pylab as plt
 import numpy as np
+import matplotlib
 
 def _simpleaxis(ax):
     for spine in ['right', 'top']:
@@ -41,9 +42,14 @@ def display_variable(group_experiments, variable, show_stats=True, axes=None, ou
     else:
         fig = None
 
+    my_cmap = plt.cm.get_cmap('tab20')
+    
     all_animals = group_experiments.all_animals
     all_dates = list(group_experiments.all_dates)
-    
+
+    cNorm = matplotlib.colors.Normalize(vmin=0, vmax=20)
+    scalarMap = plt.cm.ScalarMappable(norm=cNorm, cmap=my_cmap)
+
     res = {}
     for animal in group_experiments.all_animals:
         data = group_experiments.get_experiments_per_animals(animal)
@@ -53,10 +59,11 @@ def display_variable(group_experiments, variable, show_stats=True, axes=None, ou
 
     all_res = []
     
-    for animal in res.keys():
+    for count, animal in enumerate(res.keys()):
         res[animal] = np.array(res[animal])
         all_res += [res[animal]]
-        axes.plot(res[animal], label=animal)
+        colorVal = scalarMap.to_rgba(count)
+        axes.plot(res[animal], label=animal, c=colorVal)
 
     m = np.mean(all_res, 0)
     s = np.std(all_res, 0)
@@ -79,8 +86,11 @@ def display_weights(group_experiments, show_stats=True, axes=None, output=None):
     else:
         fig = None
 
+    my_cmap = plt.cm.get_cmap('tab20')
     all_animals = group_experiments.all_animals
     all_dates = list(group_experiments.all_dates)
+    cNorm = matplotlib.colors.Normalize(vmin=0, vmax=20)
+    scalarMap = plt.cm.ScalarMappable(norm=cNorm, cmap=my_cmap)
     
     res = {}
     for animal in group_experiments.all_animals:
@@ -91,10 +101,11 @@ def display_weights(group_experiments, show_stats=True, axes=None, output=None):
 
     all_res = []
     
-    for animal in res.keys():
+    for count, animal in enumerate(res.keys()):
         res[animal] = np.array(res[animal])
         all_res += [res[animal]]
-        axes.plot(res[animal], label=animal)
+        colorVal = scalarMap.to_rgba(count)
+        axes.plot(res[animal], label=animal, c=colorVal)
 
     m = np.mean(all_res, 0)
     s = np.std(all_res, 0)
@@ -267,7 +278,7 @@ def display_stats_group_experiments(group_experiments, axes=None, to_display=Non
         fig = None
     if to_display is None:
         to_display = group_experiments.experiments[0].variables_touchscreen
-    axes.violinplot([group_experiments.stats[i] for i in to_display])
+    axes.violinplot([group_experiments.stats[i] for i in to_display], showmeans=True)
     xaxis = np.arange(len(to_display)) + 1
     axes.set_xticks(xaxis, to_display, rotation=45)
     axes.set_ylabel('# events')
