@@ -33,9 +33,12 @@ def download_database(target_file = 'equipsy.ABETdb'):
         remoteFilePath = Path('rat') / 'touchscreen'/ 'ABET System Folder'/ 'equipsy.ABETdb'
         localFilePath = Path(f'./{target_file}')
         # Use get method to download a file
-        print(localFilePath)
-        sftp.get(str(remoteFilePath), str(localFilePath))
-        print("File successfully downloaded ...")
+        info = sftp.stat(str(remoteFilePath))
+        if info.st_size != os.stat(str(localFilePath)).st_size:
+            sftp.get(str(remoteFilePath), str(localFilePath))
+            print("File successfully downloaded ...")
+        else:
+            print("File has not changed ...")
 
     
 
