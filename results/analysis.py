@@ -131,6 +131,11 @@ class GroupExperiments():
         return GroupExperiments(experiments)
 
 
+# class SingleTrial():
+
+#     def __init__(self, database):
+#         self.data = database
+
 class SingleExperiment():
     
     def __init__(self, sid, database):
@@ -175,6 +180,19 @@ class SingleExperiment():
             res[key] = len(self.variables[key])
         return res
 
+    @property
+    def nb_trials(self):
+        du = self.data.loc[self.data['DEffectText'] == '_Trial_Counter', ['DTime', 'DValue1']]
+        return len(du) - 1
+    
+    def get_trial(self, target_trial):
+        assert target_trial < self.nb_trials
+        du = self.data.loc[self.data['DEffectText'] == '_Trial_Counter', ['DTime', 'DValue1']]
+        nb_trials = len(du) - 1
+        trial_start = du.loc[du['DValue1'] == target_trial, 'DTime'].values[0]
+        trial_stop = du.loc[du['DValue1'] == target_trial + 1, 'DTime'].values[0]
+        du = self.data[(self.data['DTime'] >= trial_start) & (self.data['DTime'] < trial_stop)]
+        return du
 
 class DataBase():
     
