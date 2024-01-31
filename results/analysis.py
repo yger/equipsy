@@ -14,7 +14,8 @@ variables_of_interest = {'Habituation' : ['Reward_First',
                                           'reward_to_screen',
                                           'screen_to_reward'],
                          'Initial Touch' : ['Correct_Counter'],
-                         'Must Touch' : ['Correct_Counter']
+                         'Must Initiate' : ['Correct_Counter'],
+                         'Must Touch' : ['Correct_Counter', 'Blank_Touch_Counter']
                         }
 
 
@@ -153,13 +154,20 @@ class SingleExperiment():
             experiment_type = 'Initial Touch'
         elif experiment_type.find('Must Touch') > -1:
             experiment_type = 'Must Touch'
+        elif experiment_type.find('Must Initiate') > -1:
+            experiment_type = 'Must Initiate'
         
         self.type = experiment_type
         df = database['tbl_Schedule_Notes']
         self.animal = df.loc[(df['SID'] == self.sid) & (df['NName'] == 'Animal ID'), 'NValue'].values[0]
+
         df = database['tbl_Data']
         self.data = df[df['SID'] == self.sid]
-        self.duration = self.data['DTime'].values[-1]
+        try:
+            self.duration = self.data['DTime'].values[-1]
+        except Exception:
+            print(self.chamber, self.animal)
+            self.duration = 0
         self.inputs = {}
         self.variables = {}
 
