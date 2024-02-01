@@ -15,7 +15,8 @@ variables_of_interest = {'Habituation' : ['Reward_First',
                                           'screen_to_reward'],
                          'Initial Touch' : ['Correct_Counter'],
                          'Must Initiate' : ['Correct_Counter'],
-                         'Must Touch' : ['Correct_Counter', 'Blank_Touch_Counter']
+                         'Must Touch' : ['Correct_Counter', 'Blank_Touch_Counter'],
+                         'Punish Incorrect' : ['Correct_Counter', 'Blank_Touch_Counter']
                         }
 
 
@@ -156,6 +157,8 @@ class SingleExperiment():
             experiment_type = 'Must Touch'
         elif experiment_type.find('Must Initiate') > -1:
             experiment_type = 'Must Initiate'
+        elif experiment_type.find('Punish Incorrect') > -1:
+            experiment_type = 'Punish Incorrect'
         
         self.type = experiment_type
         df = database['tbl_Schedule_Notes']
