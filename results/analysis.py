@@ -16,7 +16,9 @@ variables_of_interest = {'Habituation' : ['Reward_First',
                          'Initial Touch' : ['Correct_Counter'],
                          'Must Initiate' : ['Correct_Counter'],
                          'Must Touch' : ['Correct_Counter', 'Blank_Touch_Counter'],
-                         'Punish Incorrect' : ['Correct_Counter', 'Blank_Touch_Counter']
+                         'Punish Incorrect' : ['Correct_Counter', 'Blank_Touch_Counter'],
+                         'Theta 1' : ['Correct_Counter', 'Blank_Touch_Counter'],
+                         'Theta 2' : ['Correct_Counter', 'Blank_Touch_Counter']
                         }
 
 
@@ -63,7 +65,14 @@ class GroupExperiments():
 
     @property
     def all_dates(self):
-        return sorted(set([e.date.strftime('%d/%m/%y') for e in self.experiments]))
+        from datetime import datetime, date
+        lst = [e.date.strftime('%d/%m/%y') for e in self.experiments]
+        lst.sort(key=lambda x: datetime.strptime(x, '%d/%m/%y'))
+        res = []
+        for i in lst:
+            if i not in res:
+                res +=[i]
+        return res
     
     @property
     def stats(self):
@@ -159,6 +168,10 @@ class SingleExperiment():
             experiment_type = 'Must Initiate'
         elif experiment_type.find('Punish Incorrect') > -1:
             experiment_type = 'Punish Incorrect'
+        elif experiment_type.find('Theta 1 fixed') > -1:
+            experiment_type = 'Theta 1'
+        elif experiment_type.find('Theta 2 fixed') > -1:
+            experiment_type = 'Theta 2'
         
         self.type = experiment_type
         df = database['tbl_Schedule_Notes']
@@ -260,5 +273,5 @@ class DataBase():
             if target_animal == 'nan':
                 target_animal = 'E1'
             data = df.loc[df['# RAT'] == target_animal, target_date].values[0]
-            data = float(data.replace(',', '.'))
+            data = float(data)
             e.weight = data
