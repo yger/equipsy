@@ -218,6 +218,63 @@ class SingleExperiment():
         du = self.data[(self.data['DTime'] >= trial_start) & (self.data['DTime'] < trial_stop)]
         return du
 
+    def get_reaction_times(self, trials=None):
+        res = []
+        
+        if trials is None:
+            trials = range(self.nb_trials)
+            
+        for trial in trials:
+            try:
+                df = self.get_trial(trial)
+                t_start = df[(df['DEventText'] == 'Group Change Event') & (df['DGroup'] == 5)]['DTime'].values[0]
+                t_stop = df[(df['DEventText'] == 'Clear Image by Position') & (df['DGroup'] == 6)]['DTime'].values[0]
+                res += [t_stop - t_start]
+            except Exception:
+                pass
+                #print(f'{trial} can not be properly parsed')
+        return np.array(res)
+
+    def get_angular_differences(self, trials=None):
+        res = []
+
+        if self.type == 'Theta 1':
+            ref = 45
+            mapping = {1:0, 2:22.5, 3:67.5, 4:90, 5:112.5, 6:135, 7:157.5}
+        elif self.type == 'Theta 2':
+            ref = 135
+            mapping = {1:0, 2:22.5, 3:45, 4:67.5, 5:90, 6:112.5, 7:157.5}
+        
+        if trials is None:
+            trials = range(self.nb_trials)
+            
+        for trial in trials:
+            try:
+                df = self.get_trial(trial)
+                image = df[(df['DEventText'] == 'Variable Event') & (df['DEffectText'] == 'Incorrect_Image')]['DValue1'].values[0]
+                res += [np.abs(mapping[image] - ref)]
+            except Exception:
+                pass
+                #print(f'{trial} can not be properly parsed')
+        return np.array(res)
+
+    def get_responses(self, trials=None):
+        res = []
+        
+        if trials is None:
+            trials = range(self.nb_trials)
+            
+        for trial in trials:
+            try:
+                df = self.get_trial(trial)
+                correct_position = df[(df['DEventText'] == 'Variable Event') & (df['DEffectText'] == 'Correct_Grid_Position')]['DValue1'].values[0]
+                image = df[(df['DText1'] == 'Position') & (df['DGroup'] == 6) & (df['DValue2'] != -1)]['DValue1'].values[0]    
+                res += [image == correct_position]
+            except Exception:
+                pass
+                #print(f'{trial} can not be properly parsed')
+        return np.array(res)
+
 class DataBase():
     
     def __init__(self, database_path, verbose=False):
