@@ -172,10 +172,13 @@ class SingleExperiment():
             experiment_type = 'Theta 1'
         elif experiment_type.find('Theta 2 fixed') > -1:
             experiment_type = 'Theta 2'
-        
+
         self.type = experiment_type
         df = database['tbl_Schedule_Notes']
         self.animal = df.loc[(df['SID'] == self.sid) & (df['NName'] == 'Animal ID'), 'NValue'].values[0]
+
+        if self.sid == 309:
+            self.animal = 'E1'
 
         df = database['tbl_Data']
         self.data = df[df['SID'] == self.sid]
@@ -327,8 +330,6 @@ class DataBase():
         for e in self.experiments:
             target_date = e.date.strftime('%d/%m')
             target_animal = e.animal
-            if target_animal == 'nan':
-                target_animal = 'E1'
             data = df.loc[df['# RAT'] == target_animal, target_date].values[0]
             data = float(data)
             e.weight = data
