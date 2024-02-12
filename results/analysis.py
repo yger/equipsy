@@ -205,6 +205,8 @@ class SingleExperiment():
         res = {}
         for key in self.variables:
             res[key] = len(self.variables[key])
+        if 'Correct_Counter' in self.variables and 'Blank_Touch_Counter' in self.variables:
+            res['Correct_Percentage'] = 100*res['Correct_Counter'] / (res['Correct_Counter'] + res['Blank_Touch_Counter'])
         return res
 
     @property

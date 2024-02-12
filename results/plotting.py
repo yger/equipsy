@@ -10,16 +10,16 @@ def _simpleaxis(ax):
 def display_variables(group_experiments, variables=None, show_stats=True, axes=None, output=None):
 
     if variables is None:
-        variables = list(group_experiments.experiments[0].variables.keys())
+        variables = list(group_experiments.experiments[0].stats.keys())
 
     if len(variables) == 1:
         display_variable(group_experiments, variables[0], show_stats, output=output)
     else:
-        ncols = 2
+        ncols = 3
         nrows = len(variables) // ncols
         
         if axes is None:
-            fig, axes = plt.subplots(nrows, ncols, figsize=(15, 10), squeeze=False)
+            fig, axes = plt.subplots(nrows, ncols, figsize=(15, 5), squeeze=False)
         else:
             fig = None
     
@@ -72,6 +72,9 @@ def display_variable(group_experiments, variable, show_stats=True, axes=None, ou
     axes.set_ylabel(f'{variable}')
     axes.set_xticks(np.arange(len(all_dates)), all_dates, rotation=45)
     axes.legend()
+    if variable == 'Correct_Percentage':
+        axes.plot(np.arange(len(m)), 50*np.ones(len(m)), 'k--')
+        axes.set_ylim(0, 100)
     _simpleaxis(axes)
     if fig is not None:
         fig.tight_layout()
@@ -186,7 +189,7 @@ def display_experiment_over_time(experiment, axes=None, to_display=None, output=
     else:
         fig = None
     if to_display is None:
-        to_display = experiment.variables_touchscreen
+        to_display = experiment.stats.keys()
     for count, key in enumerate(to_display):
         data = experiment.variables[key]
         axes.plot(data, np.zeros(len(data)), c=f'C{count}', marker='|', mew=1,
@@ -205,7 +208,7 @@ def display_experiment_over_time(experiment, axes=None, to_display=None, output=
 
 def display_group_experiments(group_experiments, nrows=4, to_display=None, show_stats=True, output=None):
     ncols = group_experiments.nb_experiments // 4
-    fig, axes = plt.subplots(nrows, ncols, squeeze=False)
+    fig, axes = plt.subplots(nrows, ncols, squeeze=False, figsize=(10, 10))
 
     if show_stats:
         stats = group_experiments.stats
@@ -235,7 +238,7 @@ def display_experiment(experiment, axes=None, to_display=None, stats=None, outpu
     else:
         fig = None
     if to_display is None:
-        to_display = experiment.variables_touchscreen
+        to_display = experiment.stats.keys()
     data = []
     
     for key in to_display:
@@ -273,11 +276,12 @@ def display_experiment(experiment, axes=None, to_display=None, stats=None, outpu
 
 def display_stats_group_experiments(group_experiments, axes=None, to_display=None, output=None):
     if axes is None:
-        fig, axes = plt.subplots(1)
+        fig, axes = plt.subplots(1, figsize=(15, 5))
     else:
         fig = None
     if to_display is None:
-        to_display = group_experiments.experiments[0].variables_touchscreen
+        to_display = group_experiments.experiments[0].stats.keys()
+
     axes.violinplot([group_experiments.stats[i] for i in to_display], showmeans=True)
     xaxis = np.arange(len(to_display)) + 1
     axes.set_xticks(xaxis, to_display, rotation=45)
