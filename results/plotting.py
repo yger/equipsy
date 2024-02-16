@@ -406,4 +406,85 @@ def plot_nb_trials_vs_performances(group_experiments):
         axes[count].set_xlabel('# trials')
         axes[count].set_ylabel('#Average performance')
     
-                
+
+def average_reaction_time(group_experiments, dates=['05/02/24', '06/02/24', '07/02/24', '08/02/24', '09/02/24', '12/02/24', '13/02/24', '14/02/24', '15/02/24']):
+    # Get initial weights
+    all_reaction_times = []
+    all_perfs = []
+    all_corrcoeffs = []
+    all_types = []
+    all_means = []
+    all_stds = []
+    for date in dates:
+        a = group_experiments.get_experiments_per_dates(date)
+        res = []
+        for e in a.experiments:
+            tmp = e.get_reaction_times().mean()
+            res += [tmp]
+        all_means += [np.mean(res)]
+        all_stds += [np.std(res)]
+    fig, ax = plt.subplots(1)
+    all_means = np.array(all_means)
+    all_stds = np.array(all_stds)
+    ax.plot(all_means)
+    ax.fill_between(np.arange(len(all_means)), all_means-all_stds, all_means+all_stds, alpha=0.25, color='k') 
+    from plotting import _simpleaxis
+    _simpleaxis(ax)
+    ax.set_xlabel('Session')
+    ax.set_ylabel('Reaction time (s)')
+
+def two_half_performances(group_experiments, dates=['05/02/24', '06/02/24', '07/02/24', '08/02/24', '09/02/24', '12/02/24', '13/02/24', '14/02/24', '15/02/24']):
+    
+    # Get initial weights
+    all_reaction_times = []
+    all_perfs = []
+    all_corrcoeffs = []
+    all_types = []
+    all_means_before = []
+    all_stds_before = []
+    all_means_after = []
+    all_stds_after = []
+    
+    for date in dates:
+        a = group_experiments.get_experiments_per_dates(date)
+        res_before = []
+        res_after = []
+        for e in a.experiments:
+            data = e.get_responses()
+            nb_responses = len(data)
+            tmp = 100*data[:nb_responses//2].mean()
+            res_before += [tmp]
+            tmp = 100*data[nb_responses//2:].mean()
+            res_after += [tmp]
+        all_means_before += [np.mean(res_before)]
+        all_stds_before += [np.std(res_before)]
+        all_means_after += [np.mean(res_after)]
+        all_stds_after += [np.std(res_after)]
+    
+    fig, axes = plt.subplots(1)
+    all_means = np.array(all_means_before)
+    all_stds = np.array(all_stds_before)
+    axes.plot(all_means, label='First Half')
+    axes.fill_between(np.arange(len(all_means)), all_means-all_stds, all_means+all_stds, alpha=0.25, color='C0') 
+    from plotting import _simpleaxis
+    _simpleaxis(axes)
+    axes.set_xlabel('Session')
+    axes.set_ylabel('Correct Responses (%)')
+    _simpleaxis(axes)
+    axes.set_xlabel('')
+
+    
+    all_means = np.array(all_means_after)
+    all_stds = np.array(all_stds_after)        
+    axes.plot(all_means, label='Second Half')
+    #axes[1].set_title('Second Half of the Trial')
+    axes.fill_between(np.arange(len(all_means)), all_means-all_stds, all_means+all_stds, alpha=0.25, color='C1') 
+    from plotting import _simpleaxis
+    _simpleaxis(axes)
+    axes.set_xlabel('Session')
+    axes.set_ylabel('Correct Responses (%)')
+    _simpleaxis(axes)
+    axes.legend()
+    #plt.tight_layout()
+    #plt.savefig('correct_responses_splitted.png')
+         
