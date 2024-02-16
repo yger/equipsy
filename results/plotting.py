@@ -85,7 +85,7 @@ def display_variable(group_experiments, variable, show_stats=True, axes=None, ou
 
 def display_weights(group_experiments, show_stats=True, axes=None, output=None):
     if axes is None:
-        fig, axes = plt.subplots(1)
+        fig, axes = plt.subplots(1, figsize=(15, 5))
     else:
         fig = None
 
@@ -292,4 +292,69 @@ def display_stats_group_experiments(group_experiments, axes=None, to_display=Non
     if output is not None:
         plt.savefig(output)
 
+def plot_correlations(group_experiments):
+    mean_responses = {'time' : [], 'angle' : []}
+    corrcoeffs = {'time' : [], 'angle' : []}
+    all_perfs = []
+    all_types = []
+    for type in ['Theta 1', 'Theta 2']:
+        a = group_experiments.get_experiments_per_types(type)
+        for e in a.experiments:
+            tmp_reaction = e.get_reaction_times()
+            tmp_angles = e.get_angular_differences()
+            tmp_responses = e.get_responses()
+            corrcoeffs['time'] += [np.corrcoef(tmp_reaction, tmp_responses)[0, 1]]
+            mean_responses['time'] += [tmp_reaction.mean()]
+            if len(tmp_angles)!= len(tmp_responses):
+                tmp_angles = tmp_angles[:-1]
+            corrcoeffs['angle'] += [np.corrcoef(tmp_angles, tmp_responses)[0, 1]]
+            mean_responses['angle'] += [tmp_angles.mean()]
+            all_perfs += [e.stats['Correct_Percentage']]
+            if e.type == 'Theta 1':
+                all_types += [1]
+            else:
+                all_types += [2]
+
+    for key in ['time', 'angle']:
+        mean_responses[key] = np.nan_to_num(mean_responses[key])
+        corrcoeffs[key] = np.nan_to_num(corrcoeffs[key])
+            
+    fix, axes = plt.subplots(ncols=2, nrows=2, figsize=(15, 5))
+    
+    experiment = group_experiments.get_experiments_per_types('Theta 1').experiments[1]
+    tmp_responses = e.get_responses()
+    tmp_reaction = np.nan_to_num(experiment.get_reaction_times())
+    tmp_angles = e.get_angular_differences()
+    
+    axes[0, 0].set_ylabel('reaction time (s)')   
+    axes[0, 0].set_xlabel('# Trial')
+
+    axes[0, 0].plot(tmp_reaction)
+    ax2 = axes[0, 0].twinx() 
+    ax2.plot(tmp_responses, c='0.8')
+    # print(f"R-squared: {res.rvalue**2:.6f}")
+    bins =np.linspace(corrcoeffs['time'].min(), corrcoeffs['time'].max(), 20)
+    axes[0, 1].hist(corrcoeffs['time'][all_types == 1], bins, label='Theta 1', alpha=0.25)
+    axes[0, 1].hist(corrcoeffs['time'][all_types == 2], bins, label='Theta 2', alpha=0.25)
+    axes[0, 1].hist(corrcoeffs['time'], bins, label='All', alpha=0.25)
+    axes[0, 1].set_xlabel('corrcoeff')
+    axes[0, 1].set_ylabel('# Sessions')
+    axes[0, 1].legend()
+    
+    if len(tmp_angles)!= len(tmp_responses):
+        tmp_angles = tmp_angles[:-1]
+    
+    axes[1, 0].set_ylabel('angular difference (°)')
+    axes[1, 0].set_xlabel('# Trial')
+    axes[1, 0].plot(tmp_angles)
+    ax2 = axes[1, 0].twinx() 
+    ax2.plot(tmp_responses, c='0.8')
+    bins =np.linspace(corrcoeffs['angle'].min(), corrcoeffs['angle'].max(), 20)
+    axes[1, 1].hist(corrcoeffs['angle'][all_types == 1], bins, label='Theta 1', alpha=0.25)
+    axes[1, 1].hist(corrcoeffs['angle'][all_types == 2], bins, label='Theta 2', alpha=0.25)
+    axes[1, 1].hist(corrcoeffs['angle'], bins, label='All', alpha=0.25)
+    axes[1, 1].set_xlabel('corrcoeff')
+    axes[1, 1].set_ylabel('# Sessions')
+    axes[1, 1].legend()
+    
 
