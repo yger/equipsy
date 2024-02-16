@@ -315,6 +315,8 @@ def plot_correlations(group_experiments):
             else:
                 all_types += [2]
 
+    all_types = np.array(all_types)
+
     for key in ['time', 'angle']:
         mean_responses[key] = np.nan_to_num(mean_responses[key])
         corrcoeffs[key] = np.nan_to_num(corrcoeffs[key])
@@ -332,7 +334,6 @@ def plot_correlations(group_experiments):
     axes[0, 0].plot(tmp_reaction)
     ax2 = axes[0, 0].twinx() 
     ax2.plot(tmp_responses, c='0.8')
-    # print(f"R-squared: {res.rvalue**2:.6f}")
     bins =np.linspace(corrcoeffs['time'].min(), corrcoeffs['time'].max(), 20)
     axes[0, 1].hist(corrcoeffs['time'][all_types == 1], bins, label='Theta 1', alpha=0.25)
     axes[0, 1].hist(corrcoeffs['time'][all_types == 2], bins, label='Theta 2', alpha=0.25)
@@ -358,3 +359,51 @@ def plot_correlations(group_experiments):
     axes[1, 1].legend()
     
 
+def plot_nb_trials_vs_performances(group_experiments):
+    nb_trials = {}
+    stats = {}
+    all_types = []
+    fig, axes = plt.subplots(ncols=3, figsize=(15,5))
+    for type in ['Theta 1', 'Theta 2']:
+        a = group_experiments.get_experiments_per_types(type)
+        for e in a.experiments:
+            if e.animal in nb_trials:
+                nb_trials[e.animal] += [e.nb_trials]
+                stats[e.animal] += [e.stats['Correct_Percentage']]
+            else:
+                nb_trials[e.animal] = [e.nb_trials]
+                stats[e.animal] = [e.stats['Correct_Percentage']]
+        if e.type == 'Theta 1':
+            all_types += [1]
+        else:
+            all_types += [2]
+
+    for animal in nb_trials.keys():
+        nb_trials[animal] = np.array(nb_trials[animal])
+        stats[animal] = np.array(stats[animal])
+        
+    n = group_experiments.get_experiments_per_types('Theta 1').nb_experiments // 16
+    
+    all_types = np.array(all_types)
+
+    for count in range(3):
+
+        if count == 0:
+            total_nb_trials = np.array([np.sum(i[:n]) for i in nb_trials.values()])
+            mean_perfs = np.array([np.mean(i[:n]) for i in stats.values()])
+        elif count == 1:
+            total_nb_trials = np.array([np.sum(i[n:]) for i in nb_trials.values()])
+            mean_perfs = np.array([np.mean(i[n:]) for i in stats.values()])
+        elif count == 2:
+            total_nb_trials = np.array([np.sum(i) for i in nb_trials.values()])
+            mean_perfs = np.array([np.mean(i) for i in stats.values()])
+        
+        axes[count].plot(total_nb_trials, mean_perfs, '.')
+        axes[count].plot([min(total_nb_trials), max(total_nb_trials)], [50, 50], 'k--')
+        import scipy
+        slope, intercept, r, p, se = scipy.stats.linregress(total_nb_trials, mean_perfs)
+        axes[count].plot(total_nb_trials, intercept + slope*total_nb_trials, f'C{1}', label='fitted line')
+        axes[count].set_xlabel('# trials')
+        axes[count].set_ylabel('#Average performance')
+    
+                
